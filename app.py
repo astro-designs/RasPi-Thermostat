@@ -9,7 +9,7 @@ import settings
 import domoticz
 
 # Program version
-Version = 1.15
+Version = 1.16
 
 # Basic settings
 T1w_ID = '28-01191b9257fd'
@@ -66,6 +66,22 @@ HW_On = False
 
 GPIO.output(CH_PIN, CH_On) 
 
+# define function to write settings to file
+def write_settings():
+    f = open("settings.py", 'w')
+    f.write ("T1w_b = "   + str(T1w_b) + "\n")
+    f.write ("T1w_c = "   + str(T1w_c) + "\n")
+    f.write ("T_off = "   + str(T_off) + "\n")
+    f.write ("T_d = "     + str(T_d) + "\n")
+    f.write ("CH1_on = "   + str(CH1_on) + "\n")
+    f.write ("CH1_off = "  + str(CH1_off) + "\n")
+    f.write ("CH2_on = "   + str(CH2_on) + "\n")
+    f.write ("CH2_off = "  + str(CH2_off) + "\n")
+    f.write ("CH3_on = "   + str(CH3_on) + "\n")
+    f.write ("CH3_off = "  + str(CH3_off) + "\n")
+    f.close()
+    
+    
 # Define function to read one-wire temperature sensors...
 def read_temp_T1w(T1w_ID):
     # Read one-wire device
@@ -147,7 +163,7 @@ def disp_update():
         if current_time_seconds == "00":
             check_temp()
             domoticz.LogToDomoticz(T_Room_IDX, T_Room)
-            domoticz.LogToDomoticz(T_off_IDX, T_off)
+            domoticz.LogToDomoticz(T_Off_IDX, T_off)
     else:
         startup_delay = startup_delay - 1
     
@@ -164,12 +180,14 @@ def callback_KEY_UP_PIN(channel):
     global T_off, T_on
     T_off = T_off + 0.5
     T_on = T_off - T_d
+    write_settings()
 
 # Interrupt callback routine for KEY_DOWN_PIN
 def callback_KEY_DOWN_PIN(channel):  
     global T_off, T_on
     T_off = T_off - 0.5
     T_on = T_off - T_d
+    write_settings()
 
 app = App(title="Heating", height=128, width=128, bg="black")
 app.tk.attributes("-fullscreen",True)
