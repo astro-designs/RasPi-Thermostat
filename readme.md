@@ -131,9 +131,27 @@ Wire the low-voltage side of the Pi power supply to the low-voltage terminals of
 
 Wire the low-voltage side of the relay board to the Raspberry Pi. Use the spare end of one of the servo extension wires that was cut in two - it should plug in to the shrouded plug that's soldered to the Pi and the open end should be tinned and connected to the low voltage screw terminals on the relay board. The white wire should go to the 'IN' terminal which is the control signal for the relay. The red and black so to the +5V and GND / 0V screw terminals respectively.
 
-That's mostly it.
+Finally, connecting the nasty mains bit...
+
+The Central heating Thermostat could be wired in one of several ways. What we need here to make life easy is a Switched live out of the heating controller - this is a live (mains) signal that becomes live when the heating timer says it's time to turn th heating on. This connects to one end of the thermostat 'switch'. The other end of the switch - the out side, goes to the 2-port valve or 3-port valve. So usually what happens is that the as the temperature falls, the bi-metalic strip in a basic electro-mechanical thermostat will close the switch and cause the heating controller live output to be conencted to the appropriate wire on the 2-port valve. This will open the valve and when open it triggers another switch to turn on the boiler & pump.
+
+The first problem is that a basic heating thermostat doesn't need the 'Neutral' wire and without that we don't have a mains power supply to power the Raspberry Pi Power supply. If the Neutral wire is missing then you need to do some re-wiring so that the Neutral can be routed from the permanent Neutral terminal within the central heating controller - or more usually, within the heating control wiring box. Look-up the S-Plan wiring diagram for more information here. And again, if in doubt, DON'T DO IT.
+
+Assuming there's a Neutral wire in the thermostat, then we can proceed to connect things up.
+
+The Live in to the thermostat goes to the Live terminal of the mains-in screw terminal on the relay board.
+The Neutral in the thermostat goes to the Neutral terminal of the mains-in screw terminal on the relay board.
+The Earth (hopefully you have an earth wire!!) goes to the earth terminal in the inside of the 45mm patress box.
+The Live out to the 2-port or 3-port valve needs to connect to the Live terminal of the mains-out screw terminal on the relay board.
+The Neutral terminal of the Mains-out screw terminal should go to the Neutral terminal of the Pi Power Supply.
+The Live terminal of the Mains-In (that's IN :o) ) screw terminal should also go to the Live terminal of the Pi Power supply.
+
+This brings up the next problem... This wiring assumes that there is no permanent live into the Thermostat. That can be quite normal. The problem is that without a Permanent live, the Raspberry Pi will only be powered-up when the heating timer say's it's time to turn the heating on. This is fine and it'll work but it's not so great if you want to continually monitor the room temperature - even when the heating is off.
+There are two solutions here. 1) Run a permanent live from the heating controller wiring box to the thermostat - in addition to the existing wiring. This can then be used to power the Pi permanently. You'll need an extra screw terminal for this that'll allow you to connect the permanent live to the Pi Power supply.
+2) Turn the heating on permanently and let the Pi control the timing of the heating. This is exactly what we did here. This is absolutely fine but it means that your Raspberry Pi is now the heating timer and needs to be configured to bring turn the heating on and off in accordance with the original timer.
+Note that the software included here currently has fixed on/off times but provision is included to set these in the settings file and since the settings file is re-written by the software when something changes, the software just needs to be modified to allow the user to change the on/off times. Work in progress...
 
 
+That's mostly it. As I said above, very rough notes nut hopefully a few clues in there.
 
-
-I'll get some pictures in here at some point.
+I'll get some pictures in here at some point too.
