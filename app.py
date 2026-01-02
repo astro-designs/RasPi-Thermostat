@@ -27,6 +27,7 @@ T_on = T_off - T_d     # Default target range lower limit
 current_time = 0.0
 CH_Timer = False
 CH_Boost = 0
+CH_Advance = False
 
 # Timer defaults
 CH1_on = settings.CH1_on
@@ -39,8 +40,8 @@ CH3_off = settings.CH3_off
 # Waveshare 1.44 LCD GPIO
 KEY_UP_PIN     = 26
 KEY_DOWN_PIN   = 5
-KEY_LEFT_PIN   = 19
-KEY_RIGHT_PIN  = 6
+KEY_LEFT_PIN   = 6
+KEY_RIGHT_PIN  = 19
 KEY_PRESS_PIN  = 13
 KEY1_PIN       = 21
 KEY2_PIN       = 20
@@ -106,11 +107,34 @@ def read_temp_T1w(T1w_ID):
 
 # Function to read & check the temperature
 def check_temp():
-    global T_Room, CH_On, CH_Timer
+    global T_Room, CH_On, CH_Timer, CH_Boost, CH_Advance
     
     T_Room = read_temp_T1w(T1w_ID)
+
     # C/H Timer
-    if (CH_Boost > 0) or (current_time >= CH1_on) and current_time < CH1_off or (current_time >= CH2_on and current_time < CH2_off) or (current_time >= CH3_on and current_time < CH3_off):
+    if (current_time >= CH1_on and current_time < CH1_off) or (current_time >= CH2_on and current_time < CH2_off) or (current_time >= CH3_on and current_time < CH3_off):
+
+        CH_Boost = 0
+        CH_Timer = True
+        # C/H Thermostat
+        if T_Room < T_on:
+            CH_On = True
+        elif T_Room > T_off:
+            CH_On = False
+
+    # C/H Advance funciton
+    elif CH_Advance == True:
+    
+        CH_Boost = 0
+        CH_Timer = True
+        # C/H Thermostat
+        if T_Room < T_on:
+            CH_On = True
+        elif T_Room > T_off:
+            CH_On = False
+
+    # C/H Boost
+    elif (CH_Boost > 0):
 
         CH_Timer = True
         # C/H Thermostat
@@ -118,6 +142,7 @@ def check_temp():
             CH_On = True
         elif T_Room > T_off:
             CH_On = False
+    
     else:
         CH_Timer = False
         CH_On = False
@@ -126,7 +151,7 @@ def check_temp():
     
 # Function to update display
 def disp_update():
-    global startup_delay, current_time, CH_Boost
+    global startup_delay, current_time, CH_Boost, CH_Advance
     now = datetime.datetime.now()
     current_time_hours = now.strftime("%H")
     current_time_minutes = now.strftime("%M")
@@ -155,7 +180,9 @@ def disp_update():
             CH_Boost_sec = CH_Boost_sec[-2:]
             disp_Time.value = "Boost: " + CH_Boost_min + ":" + CH_Boost_sec
         else:
-            if CH_Timer == True:
+            if CH_Advance == True:
+                disp_Time.value = current_time_hours + ":" + current_time_minutes + ":" + current_time_seconds + " (Adv)"
+            elif CH_Timer == True:
                 disp_Time.value = current_time_hours + ":" + current_time_minutes + ":" + current_time_seconds + " (On)"
             else:
                 disp_Time.value = current_time_hours + ":" + current_time_minutes + ":" + current_time_seconds + " (Off)"
@@ -170,24 +197,38 @@ def disp_update():
 # Interrupt callback routine for KEY_PRESS_PIN
 def callback_KEY_PRESS_PIN(channel):  
     global CH_Boost
-    if CH_Boost == 0:
-        CH_Boost = 3600
+    if CH_Boost <= 900:
+        CH_Boost = 1800 # 30 minutes
+    elif CH_Boost <= 2700:
+        CH_Boost = 3600 # 60 minutes
+    elif CH_Boost <= 4500:
+        CH_Boost = 5400 # 90 minutes
     else:
-        CH_Boost = 0
+        CH_Boost = 0 # Off
 
-# Interrupt callback routine for KEY_UP_PIN
+# Interrupt callback routine for KEY_UP_PIN (Increase temp)
 def callback_KEY_UP_PIN(channel):  
     global T_off, T_on
     T_off = T_off + 0.5
     T_on = T_off - T_d
     write_settings()
 
-# Interrupt callback routine for KEY_DOWN_PIN
+# Interrupt callback routine for KEY_DOWN_PIN (decrease temp)
 def callback_KEY_DOWN_PIN(channel):  
     global T_off, T_on
     T_off = T_off - 0.5
     T_on = T_off - T_d
     write_settings()
+
+# Interrupt callback routine for KEY_LEFT_PIN (Advance off)
+def callback_KEY_LEFT_PIN(channel):  
+    global CH_Advance
+    CH_Advance = False
+
+# Interrupt callback routine for KEY_RIGHT_PIN (Advance on)
+def callback_KEY_RIGHT_PIN(channel):  
+    global CH_Advance
+    CH_Advance = True
 
 app = App(title="Heating", height=128, width=128, bg="black")
 app.tk.attributes("-fullscreen",True)
@@ -200,6 +241,8 @@ disp_Date = Text(app, text=str(Version), size=30, color="yellow")
 # Setup interrupts
 GPIO.add_event_detect(KEY_UP_PIN, GPIO.FALLING, callback=callback_KEY_UP_PIN, bouncetime=300) 
 GPIO.add_event_detect(KEY_DOWN_PIN, GPIO.FALLING, callback=callback_KEY_DOWN_PIN, bouncetime=300)
+GPIO.add_event_detect(KEY_LEFT_PIN, GPIO.FALLING, callback=callback_KEY_LEFT_PIN, bouncetime=300) 
+GPIO.add_event_detect(KEY_RIGHT_PIN, GPIO.FALLING, callback=callback_KEY_RIGHT_PIN, bouncetime=300)
 GPIO.add_event_detect(KEY_PRESS_PIN, GPIO.FALLING, callback=callback_KEY_PRESS_PIN, bouncetime=300)
 
 # Initial call to check the temperature
